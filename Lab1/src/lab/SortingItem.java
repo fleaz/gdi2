@@ -25,5 +25,15 @@ public class SortingItem {
 	}
 
 	// You may add additional methods here
+	public String getBookSerialNumber() {
+		return BookSerialNumber;
+	}
 
+	public String getReaderID() {
+		return ReaderID;
+	}
+
+	public String getStatus() {
+		return Status;
+	}
 }

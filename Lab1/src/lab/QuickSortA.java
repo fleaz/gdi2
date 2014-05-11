@@ -18,9 +18,28 @@ public class QuickSortA extends QuickSort {
 	 */
 	@Override
 	public void Quicksort(SortArray records, int left, int right) {
-		// TODO
-		// implement the Quicksort A algorithm to sort the records
-		// (choose the pivot as the first (leftmost) element in the list)
+
+		SortingItem pivot = records.getElementAt(left);
+		int i = left + 1;
+		int j = right;
+
+		while(i <= j){
+
+			while((i <= j) && (lessOrEqual(records.getElementAt(i), pivot))){
+				//System.out.println("left:" + left);
+				i++;
+			}
+			while((j >= i) && (biggerThan(records.getElementAt(j),pivot))){
+				//System.out.println("right:" + right);
+				j--;
+			}
+			if(i < j){
+				swap(records, i, j);
+			}
+		}
+        swap(records, left, j);
+        if (j-left > 1) Quicksort(records, left, j-1);
+        if (right-i >= 1) Quicksort(records, i, right);
 	}
 
 	// You may add additional methods here

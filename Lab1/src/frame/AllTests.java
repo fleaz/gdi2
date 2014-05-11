@@ -128,8 +128,16 @@ public class AllTests extends TestCase {
 							.compareTo(lastRecord.BookSerialNumber) == 0) && ((actualRecord.ReaderID
 							.compareTo(lastRecord.ReaderID) > 0) || ((actualRecord.ReaderID
 							.compareTo(lastRecord.ReaderID) == 0))));
-			lastRecord = actualRecord;
 
+            //if(sorted == false){
+            //    System.out.println("----");
+            //    System.out.println(i);
+            //    System.out.println(lastRecord.getBookSerialNumber());
+            //    System.out.println(actualRecord.getBookSerialNumber());
+            //    System.out.println("----");
+            //}
+
+            lastRecord = actualRecord;
 		}
 		return sorted;
 	}
@@ -296,6 +304,7 @@ public class AllTests extends TestCase {
 			readOps = records.getReadingOperations();
 			writeOps = records.getWritingOperations();
 
+            System.out.println(sortingTester(records));
 			org.junit.Assert.assertTrue(sortingTester(records));
 
 			System.out.println("QuicksortB [" + inputFiles[file]
