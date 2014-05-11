@@ -25,5 +25,24 @@ public class SortingItem {
 	}
 
 	// You may add additional methods here
+    public String getBookSerialNumber(){
+        return this.BookSerialNumber;
+    }
 
+    public String getReaderID(){
+        return this.ReaderID;
+    }
+    
+    public String getStatus(){
+        return this.Status;
+    }
+
+    @Override
+    public String toString(){
+        StringBuilder str = new StringBuilder();
+        str.append(this.getBookSerialNumber());
+        str.append(this.getReaderID());
+
+        return str.toString();
+    }
 }
