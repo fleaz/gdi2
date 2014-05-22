@@ -1,6 +1,14 @@
 package lab;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The class Navigation finds the shortest (and/or) path between points on a map
@@ -8,9 +16,11 @@ import java.util.ArrayList;
  */
 public class Navigation {
 	/**
-	 * Return codes: -1 if the source is not on the map -2 if the destination is
-	 * not on the map -3 if both source and destination points are not on the
-	 * map -4 if no path can be found between source and destination
+	 * Return codes:
+     * -1 if the source is not on the map
+     * -2 if the destination is not on the map
+     * -3 if both source and destination points are not on the map
+     * -4 if no path can be found between source and destination
 	 */
 
 	public static final int SOURCE_NOT_FOUND = -1;
@@ -18,6 +28,8 @@ public class Navigation {
 	public static final int SOURCE_DESTINATION_NOT_FOUND = -3;
 	public static final int NO_PATH = -4;
 
+    private HashMap<String, Vertex> vertices = new HashMap<String, Vertex>();
+    private ArrayList<Edge> edges = new ArrayList<Edge>();
 	/**
 	 * The constructor takes a filename as input, it reads that file and fill
 	 * the nodes and edges Lists with corresponding node and edge objects
@@ -25,12 +37,75 @@ public class Navigation {
 	 * @param filename
 	 *            name of the file containing the input map
 	 */
-	public Navigation(String filename) {
-		//TODO Add you code here
+    public Navigation(String filename) {
+        Pattern edgePattern = Pattern.compile("(\\w+)\\s->\\s(\\w)+\\s\\[.*label=\"(\\d+),(\\d+)\".*\\];");
+        Pattern vertexPattern = Pattern.compile("(\\w+)\\s\\[.*label=\"(\\w+),(\\w+)\".*\\];");
 
-	}
+        ArrayList<String> lines = readFile(filename);
 
-	/**
+        // First get all vertices
+        for (String line: lines){
+            Matcher m = vertexPattern.matcher(line);
+            if (m.matches()){
+                // It's a vertex
+                String id = m.group(1);
+                String name = m.group(2);
+                int delay = Integer.valueOf(m.group(3));
+                //System.out.println("ID: " +id + " Name: " + name + " Wartezeit: " + delay);
+                Vertex v = new Vertex(name, delay);
+                vertices.put(id, v);
+            }
+            else{
+                continue;
+            }
+        }
+
+        // When we have every vertex, we can read the edges
+        for (String line: lines){
+            Matcher m = edgePattern.matcher(line);
+            if(m.matches()){
+                // It's an edge
+                String from = m.group(1);
+                String to = m.group(2);
+                int length = Integer.valueOf(m.group(3));
+                int maxSpeed = Integer.valueOf(m.group(4));
+                //System.out.println("Von: " + m.group(1) + " Nach: " + m.group(2) + " Länge: " + m.group(3) + " Speed: " + m.group(4));
+
+                Vertex fromV = vertices.get(from);
+                Vertex toV = vertices.get(to);
+                Edge e = new Edge(fromV, toV, length, maxSpeed);
+                fromV.connectOutgoingEdge(e);
+                edges.add(e);
+            }
+            else{
+                continue;
+            }
+        }
+    }
+
+    /**
+     * Reads a given file
+     * @param filename name of the file in the project dir
+     * @return ArrayList<String> with every line of the file
+     */
+    private ArrayList<String> readFile(String filename) {
+        ArrayList<String> lines = new ArrayList<String>();
+
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(filename));
+            String line;
+            while ((line = in.readLine()) != null) {
+                lines.add(line);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return lines;
+    }
+
+    /**
 	 * This methods finds the shortest route (distance) between points A and B
 	 * on the map given in the constructor.
 	 * 
@@ -53,7 +128,7 @@ public class Navigation {
 	 */
 	public ArrayList<String> findShortestRoute(String A, String B) {
 		//TODO  Add you code here
-		
+
 		return new ArrayList<>(); // dummy, replace
 	}
 
@@ -95,18 +170,79 @@ public class Navigation {
 	 * @return the shortest distance in kilometers rounded upwards.
 	 *         SOURCE_NOT_FOUND if point A is not on the map
 	 *         DESTINATION_NOT_FOUND if point B is not on the map
-	 *         SOURCE_DESTINATION_NOT_FOUND if point A and point B are not on
-	 *         the map NO_PATH if no path can be found between point A and point
+	 *         SOURCE_DESTINATION_NOT_FOUND if point A and point B are not on the map
+     *         NO_PATH if no path can be found between point A and point
 	 *         B
 	 */
 	public int findShortestDistance(String A, String B) {
-		//TODO Add you code here
-		int sd = 0; 
 
-		return sd;
+        //Source and target vertex
+        Vertex currentVertex = vertices.get(A);
+        Vertex targetVertex = vertices.get(B);
+
+        if (currentVertex == null && targetVertex == null){
+            return SOURCE_DESTINATION_NOT_FOUND;
+        }
+        if (currentVertex == null){
+            return SOURCE_NOT_FOUND;
+        }
+        if(targetVertex == null){
+            return DESTINATION_NOT_FOUND;
+        }
+
+        // List of nodes and there shortest distance from A to there
+        HashMap<Vertex, Integer> distances = new HashMap<Vertex, Integer>();
+        ArrayList<Vertex> unvisitedVertices = new ArrayList<Vertex>();
+
+        for (Map.Entry<String,Vertex> entry: vertices.entrySet()){
+            distances.put(entry.getValue(), Integer.MAX_VALUE);
+            unvisitedVertices.add(entry.getValue());
+        }
+        unvisitedVertices.remove(currentVertex);
+
+        while(currentVertex != targetVertex){
+            updateList(currentVertex, distances);
+            Vertex nextVertex = findShortest(unvisitedVertices, distances);
+            unvisitedVertices.remove(nextVertex);
+            currentVertex = nextVertex;
+        }
+
+        int ret = distances.get(targetVertex);
+
+        if (ret == Integer.MAX_VALUE){
+            return NO_PATH;
+        }
+        else{
+            return ret;
+        }
 	}
 
-	/**
+    private void updateList(Vertex vertex, HashMap<Vertex, Integer> listOfVertices) {
+        ArrayList<Edge> edges = vertex.outgoingEdges;
+        for(Edge e: edges){
+            // Update distance if
+            // (distance from source to me + distance from me to target) < last know distance to target
+            if ((listOfVertices.get(vertex) + e.length) < listOfVertices.get(e.to)){
+                listOfVertices.put(e.to, listOfVertices.get(vertex) + e.length);
+            }
+        }
+    }
+
+
+    private Vertex findShortest(ArrayList<Vertex> unvisitedVertices, HashMap<Vertex, Integer> distances) {
+        Integer shortest = Integer.MAX_VALUE;
+        Vertex retVertex = null;
+
+        for(Vertex v: unvisitedVertices){
+            if (distances.get(v) < shortest){
+                shortest = distances.get(v);
+                retVertex = v;
+            }
+        }
+        return retVertex;
+    }
+
+    /**
 	 * Find the fastest route between A and B using the dijkstra algorithm.
 	 * 
 	 * @param A
