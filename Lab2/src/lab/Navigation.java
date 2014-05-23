@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,8 +37,10 @@ public class Navigation {
 	 *            name of the file containing the input map
 	 */
     public Navigation(String filename) {
-        Pattern edgePattern = Pattern.compile("(\\w+)\\s->\\s(\\w)+\\s\\[.*label=\"(\\d+),(\\d+)\".*\\];");
-        Pattern vertexPattern = Pattern.compile("(\\w+)\\s\\[.*label=\"(\\w+),(\\w+)\".*\\];");
+        Pattern edgePattern =
+                Pattern.compile("^(\\w+)\\s->\\s(\\w+)\\s\\[.*label=\"(\\d+),(\\d+)\".*\\];", Pattern.MULTILINE);
+        Pattern vertexPattern =
+                Pattern.compile("^(\\w+)\\s\\[.*label=\"(\\w+),(\\w+)\".*\\];", Pattern.MULTILINE);
 
         ArrayList<String> lines = readFile(filename);
 
@@ -51,7 +52,7 @@ public class Navigation {
                 String id = m.group(1);
                 String name = m.group(2);
                 int delay = Integer.valueOf(m.group(3));
-                //System.out.println("ID: " +id + " Name: " + name + " Wartezeit: " + delay);
+
                 Vertex v = new Vertex(name, delay);
                 vertices.put(id, v);
             }
@@ -69,7 +70,6 @@ public class Navigation {
                 String to = m.group(2);
                 int length = Integer.valueOf(m.group(3));
                 int maxSpeed = Integer.valueOf(m.group(4));
-                //System.out.println("Von: " + m.group(1) + " Nach: " + m.group(2) + " Länge: " + m.group(3) + " Speed: " + m.group(4));
 
                 Vertex fromV = vertices.get(from);
                 Vertex toV = vertices.get(to);
@@ -175,7 +175,6 @@ public class Navigation {
 	 *         B
 	 */
 	public int findShortestDistance(String A, String B) {
-
         //Source and target vertex
         Vertex currentVertex = vertices.get(A);
         Vertex targetVertex = vertices.get(B);
@@ -190,19 +189,26 @@ public class Navigation {
             return DESTINATION_NOT_FOUND;
         }
 
+
         // List of nodes and there shortest distance from A to there
-        HashMap<Vertex, Integer> distances = new HashMap<Vertex, Integer>();
-        ArrayList<Vertex> unvisitedVertices = new ArrayList<Vertex>();
+        HashMap<Vertex, Integer> distances = new HashMap<>();
+        ArrayList<Vertex> unvisitedVertices = new ArrayList<>();
 
         for (Map.Entry<String,Vertex> entry: vertices.entrySet()){
-            distances.put(entry.getValue(), Integer.MAX_VALUE);
+            if(entry.getValue().getName() == currentVertex.getName()){
+                distances.put(entry.getValue(), 0);
+            }
+            else{
+                distances.put(entry.getValue(), Integer.MAX_VALUE);
+            }
+
             unvisitedVertices.add(entry.getValue());
         }
         unvisitedVertices.remove(currentVertex);
 
-        while(currentVertex != targetVertex){
-            updateList(currentVertex, distances);
-            Vertex nextVertex = findShortest(unvisitedVertices, distances);
+        while(currentVertex != null && currentVertex != targetVertex){
+            updateListLength(currentVertex, distances);
+            Vertex nextVertex = findNextByLength(unvisitedVertices, distances);
             unvisitedVertices.remove(nextVertex);
             currentVertex = nextVertex;
         }
@@ -217,8 +223,8 @@ public class Navigation {
         }
 	}
 
-    private void updateList(Vertex vertex, HashMap<Vertex, Integer> listOfVertices) {
-        ArrayList<Edge> edges = vertex.outgoingEdges;
+    private void updateListLength(Vertex vertex, HashMap<Vertex, Integer> listOfVertices) {
+        ArrayList<Edge> edges = vertex.getOutgoingEdges();
         for(Edge e: edges){
             // Update distance if
             // (distance from source to me + distance from me to target) < last know distance to target
@@ -229,7 +235,7 @@ public class Navigation {
     }
 
 
-    private Vertex findShortest(ArrayList<Vertex> unvisitedVertices, HashMap<Vertex, Integer> distances) {
+    private Vertex findNextByLength(ArrayList<Vertex> unvisitedVertices, HashMap<Vertex, Integer> distances) {
         Integer shortest = Integer.MAX_VALUE;
         Vertex retVertex = null;
 
@@ -255,11 +261,87 @@ public class Navigation {
 	 *         are not on the map NO_PATH if no path can be found between point
 	 *         A and point B
 	 */
-	public int findFastestTime(String pointA, String pointB) {
-		//TODO Add you code here
-		int ft = 0;
+	public int findFastestTime(String A, String B) {
+        //Source and target vertex
+        Vertex startVertex = vertices.get(A);
+        Vertex targetVertex = vertices.get(B);
 
-		return ft;
+        if (startVertex == null && targetVertex == null){
+            return SOURCE_DESTINATION_NOT_FOUND;
+        }
+        if (startVertex == null){
+            return SOURCE_NOT_FOUND;
+        }
+        if(targetVertex == null){
+            return DESTINATION_NOT_FOUND;
+        }
+        if(startVertex == targetVertex){
+            return 0;
+        }
+
+        // List of nodes and there shortest distance from A to there
+        HashMap<Vertex, Double> times = new HashMap<>();
+        ArrayList<Vertex> unvisitedVertices = new ArrayList<>();
+
+        for (Map.Entry<String,Vertex> entry: vertices.entrySet()){
+            if(entry.equals(startVertex)){
+                times.put(entry.getValue(), 0.0);
+            }
+            else{
+                times.put(entry.getValue(), Double.MAX_VALUE);
+            }
+
+            unvisitedVertices.add(entry.getValue());
+        }
+
+
+        for(Edge e: startVertex.getOutgoingEdges()){
+            times.put(e.to, e.getTravelTime());
+        }
+        unvisitedVertices.remove(startVertex);
+
+        Vertex currentVertex = findNextByTime(unvisitedVertices,times);
+
+        while(currentVertex != null && currentVertex != targetVertex){
+            updateListTime(currentVertex, times);
+            currentVertex = findNextByTime(unvisitedVertices, times);
+            unvisitedVertices.remove(currentVertex);
+        }
+
+        Double ret = times.get(targetVertex);
+
+        if (ret == Double.MAX_VALUE){
+            return NO_PATH;
+        }
+        else{
+            int newRet = (int)Math.ceil(ret);
+            return newRet;
+        }
 	}
+
+    private void updateListTime(Vertex vertex, HashMap<Vertex, Double> times) {
+        ArrayList<Edge> edges = vertex.getOutgoingEdges();
+        for(Edge e: edges){
+            // Update time if
+            // (time from source to me + time from me to target + my delay) < last know time to target
+            if ((times.get(vertex) + e.getTravelTime() + e.getFrom().getDelay()) < times.get(e.to)){
+                times.put(e.to, times.get(vertex) + e.getTravelTime() + vertex.getDelay());
+            }
+        }
+    }
+
+
+    private Vertex findNextByTime(ArrayList<Vertex> unvisitedVertices, HashMap<Vertex, Double> times) {
+        Double shortest = Double.MAX_VALUE;
+        Vertex retVertex = null;
+
+        for(Vertex v: unvisitedVertices){
+            if (times.get(v) < shortest){
+                shortest = times.get(v);
+                retVertex = v;
+            }
+        }
+        return retVertex;
+    }
 
 }

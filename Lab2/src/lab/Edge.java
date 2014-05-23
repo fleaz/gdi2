@@ -31,4 +31,11 @@ public class Edge {
     public int getSpeedLimit(){
         return this.speedLimit;
     }
+
+    public double getTravelTime(){
+        // Duration to drive along this edge
+        // (speed / length) / 60 to get minutes
+        double time = ((double)this.length / (double)this.speedLimit) * 60.0;
+        return time;
+    }
 }

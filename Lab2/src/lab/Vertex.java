@@ -28,4 +28,8 @@ public class Vertex {
     public int getDelay(){
         return this.delay;
     }
+
+    public ArrayList<Edge> getOutgoingEdges(){
+        return this.outgoingEdges;
+    }
 }
