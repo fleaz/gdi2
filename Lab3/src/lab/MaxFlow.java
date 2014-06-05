@@ -20,7 +20,9 @@ public class MaxFlow {
 	public static final int NO_SOURCE_DESTINATION_FOUND = -3;
 	public static final int NO_PATH = -4;
 	public static final int SOURCES_SAME_AS_DESTINATIONS = Integer.MAX_VALUE;
-	
+
+    private Graph graph = new Graph();
+
 	/**
 	 * The constructor, setting the name of the file to parse.
 	 * 
