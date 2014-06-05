@@ -127,10 +127,70 @@ public class Navigation {
 	 *         returned.
 	 */
 	public ArrayList<String> findShortestRoute(String A, String B) {
-		//TODO  Add you code here
+        //Source and target vertex
+        Vertex currentVertex = vertices.get(A);
+        Vertex targetVertex = vertices.get(B);
 
-		return new ArrayList<>(); // dummy, replace
+        // List of nodes and there shortest distance from A to there
+        HashMap<Vertex, Integer> distances = new HashMap<>();
+        ArrayList<Vertex> unvisitedVertices = new ArrayList<>();
+        HashMap<Vertex,ArrayList<Edge>> paths = new HashMap<>();
+
+        for (Map.Entry<String,Vertex> entry: vertices.entrySet()){
+            if(entry.getValue().equals(currentVertex)){
+                distances.put(entry.getValue(), 0);
+            }
+            else{
+                distances.put(entry.getValue(), Integer.MAX_VALUE);
+            }
+            paths.put(entry.getValue(), new ArrayList<Edge>()); // Start with an empty path to every vertex
+            unvisitedVertices.add(entry.getValue());
+        }
+        unvisitedVertices.remove(currentVertex);
+
+        while(currentVertex != null && currentVertex != targetVertex){
+            updateListLengthWithPath(currentVertex, distances, paths);
+            Vertex nextVertex = findNextByLength(unvisitedVertices, distances);
+            unvisitedVertices.remove(nextVertex);
+            currentVertex = nextVertex;
+        }
+
+        ArrayList<String> dotGraph = new ArrayList<>();
+        dotGraph.add("digraph {");
+        ArrayList<Edge> finalPath = paths.get(targetVertex);
+
+        for (Edge e: edges){
+            if(finalPath.contains(e)){
+                dotGraph.add(e.toDotBold());
+            }
+            else{
+                dotGraph.add(e.toDot());
+            }
+        }
+
+        for(Map.Entry<String,Vertex> entry: vertices.entrySet()){
+            dotGraph.add(entry.getValue().toDot());
+        }
+
+        dotGraph.add("}");
+
+		return dotGraph;
 	}
+
+    private void updateListLengthWithPath(Vertex vertex, HashMap<Vertex, Integer> listOfVertices, HashMap<Vertex,ArrayList<Edge>> paths) {
+        ArrayList<Edge> edges = vertex.getOutgoingEdges();
+        for(Edge e: edges){
+            // Update distance if
+            // (distance from source to me + distance from me to target) < last know distance to target
+
+            if ((listOfVertices.get(vertex) + e.length) < listOfVertices.get(e.to)){
+                listOfVertices.put(e.to, listOfVertices.get(vertex) + e.length);
+                ArrayList<Edge> tmp = new ArrayList<Edge>(paths.get(e.from));
+                tmp.add(e);
+                paths.put(e.to, tmp);
+            }
+        }
+    }
 
 	/**
 	 * This methods finds the fastest route (in time) between points A and B on
@@ -154,12 +214,72 @@ public class Navigation {
 	 *         returned.
 	 */
 	public ArrayList<String> findFastestRoute(String A, String B) {
-		//TODO Add you code here
-		
-		return new ArrayList<>(); // dummy, replace
-	}
+        //Source and target vertex
+        Vertex currentVertex = vertices.get(A);
+        Vertex targetVertex = vertices.get(B);
 
-	/**
+        // List of nodes and there shortest distance from A to there
+        HashMap<Vertex, Double> times = new HashMap<>();
+        ArrayList<Vertex> unvisitedVertices = new ArrayList<>();
+        HashMap<Vertex,ArrayList<Edge>> paths = new HashMap<>();
+
+        for (Map.Entry<String,Vertex> entry: vertices.entrySet()){
+            if(entry.getValue().equals(currentVertex)){
+                times.put(entry.getValue(), 0.0);
+            }
+            else{
+                times.put(entry.getValue(), Double.MAX_VALUE);
+            }
+            paths.put(entry.getValue(), new ArrayList<Edge>()); // Start with an empty path to every vertex
+            unvisitedVertices.add(entry.getValue());
+        }
+        unvisitedVertices.remove(currentVertex);
+
+        while(currentVertex != null && currentVertex != targetVertex){
+            updateListTimeWithPath(currentVertex, times, paths);
+            Vertex nextVertex = findNextByTime(unvisitedVertices, times);
+            unvisitedVertices.remove(nextVertex);
+            currentVertex = nextVertex;
+        }
+
+        ArrayList<String> dotGraph = new ArrayList<>();
+        dotGraph.add("digraph {");
+        ArrayList<Edge> finalPath = paths.get(targetVertex);
+
+        for (Edge e: edges){
+            if(finalPath.contains(e)){
+                dotGraph.add(e.toDotBold());
+            }
+            else{
+                dotGraph.add(e.toDot());
+            }
+        }
+
+        for(Map.Entry<String,Vertex> entry: vertices.entrySet()){
+            dotGraph.add(entry.getValue().toDot());
+        }
+
+        dotGraph.add("}");
+
+        return dotGraph;
+    }
+
+    private void updateListTimeWithPath(Vertex vertex, HashMap<Vertex, Double> times, HashMap<Vertex,ArrayList<Edge>> paths) {
+        ArrayList<Edge> edges = vertex.getOutgoingEdges();
+        for(Edge e: edges){
+            // Update distance if
+            // (distance from source to me + distance from me to target) < last know distance to target
+
+            if ((times.get(vertex) + e.getTravelTime() + e.getFrom().getDelay()) < times.get(e.to)){
+                times.put(e.to, times.get(vertex) + e.getTravelTime() + vertex.getDelay());
+                ArrayList<Edge> tmp = new ArrayList<Edge>(paths.get(e.from));
+                tmp.add(e);
+                paths.put(e.to, tmp);
+            }
+        }
+    }
+
+    /**
 	 * Finds the shortest distance in kilometers between A and B using the
 	 * Dijkstra algorithm.
 	 * 

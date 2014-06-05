@@ -32,4 +32,37 @@ public class Vertex {
     public ArrayList<Edge> getOutgoingEdges(){
         return this.outgoingEdges;
     }
+
+    public String toDot(){
+        // A [label="A,0"];
+        StringBuilder tmp = new StringBuilder();
+        tmp.append(name);
+        tmp.append(" [label=\"");
+        tmp.append(name);
+        tmp.append(",");
+        tmp.append(delay);
+        tmp.append("\"];");
+
+        return tmp.toString();
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

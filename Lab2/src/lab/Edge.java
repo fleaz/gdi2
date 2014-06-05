@@ -38,4 +38,34 @@ public class Edge {
         double time = ((double)this.length / (double)this.speedLimit) * 60.0;
         return time;
     }
+
+    public String toDot(){
+        // E -> F [label="4,60"];
+        StringBuilder tmp = new StringBuilder();
+        tmp.append(from.getName());
+        tmp.append(" -> ");
+        tmp.append(to.getName());
+        tmp.append(" [label=\"");
+        tmp.append(length);
+        tmp.append(",");
+        tmp.append(speedLimit);
+        tmp.append("\"];");
+
+        return tmp.toString();
+    }
+
+    public String toDotBold(){
+        // E -> F [label="4,60"];
+        StringBuilder tmp = new StringBuilder();
+        tmp.append(from.getName());
+        tmp.append(" -> ");
+        tmp.append(to.getName());
+        tmp.append(" [label=\"");
+        tmp.append(length);
+        tmp.append(",");
+        tmp.append(speedLimit);
+        tmp.append("\"][style=bold];");
+
+        return tmp.toString();
+    }
 }
