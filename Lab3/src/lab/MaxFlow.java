@@ -5,6 +5,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -105,13 +107,11 @@ public class MaxFlow {
 
         for (String source: sources){
             if(!graph.hasVertex(source)){
-                System.out.println(source + " not in Graph");
                 noSource = true;
             }
         }
         for (String dest: destinations){
             if(!graph.hasVertex(dest)){
-                System.out.println(dest + " not in Graph");
                 noDest = true;
             }
         }
@@ -134,11 +134,126 @@ public class MaxFlow {
             }
         }
 
-        // Hier kommt jetzt der Ford-Volker
+        createSuperVertices(sources, destinations);
+        graph.setSourceAndDestinations(sources, destinations);
+
+        // Check if there is a path
+        ArrayList<Edge> nextPath = findPath();
+        if (nextPath == null){
+            return NO_PATH;
+        }
+
+
+
+        while(true){
+            // Find path
+            nextPath = findPath();
+            if (nextPath == null){
+                break;
+            }
+
+            // Get max Cap on path
+            int maxFlow = Integer.MAX_VALUE;
+            for (Edge e: nextPath){
+                if (e.getRemainingCapacity() < maxFlow){
+                    maxFlow = e.getRemainingCapacity();
+                }
+            }
+
+            // Add flow along the path
+            for (Edge e: nextPath){
+                e.addFlow(maxFlow);
+            }
+        }
+
 		return 0;
 	}
-	
-	/**
+
+    private ArrayList<Edge> findPath() {
+        HashMap<Vertex,ArrayList<Edge>> paths = new HashMap<>();
+        ArrayList<Vertex> queue = new ArrayList<>();
+
+        Vertex destinationVertex = graph.getVertex("superDestination");
+        Vertex currentVertex = null;
+        //System.out.println("Destination Vertex: " + destinationVertex.getName());
+
+        // Insert start vertex
+        queue.add(graph.getVertex("superSource"));
+
+        //Initialize paths list
+        ArrayList<Vertex> allVertices = graph.getVertices();
+        for (Vertex v: allVertices){
+            paths.put(v, new ArrayList<Edge>()); // Empty path for every vertex
+        }
+
+        // Clear 'visited' status on the vertices
+        graph.clearStatus();
+
+        while (!queue.isEmpty()){
+            currentVertex = queue.get(0);
+            queue.remove(0);
+            currentVertex.setVisited(true);
+
+            //System.out.println("Current Vertex: " + currentVertex.getName());
+
+            if(currentVertex == destinationVertex){
+                break;
+            }
+            else{
+                for (Edge e: currentVertex.getOutgoingEdges()){
+                    if (e.hasCapacityLeft()){ // Only use available edges (has remaining capacity)
+                        // Add new Vertex to queue
+                        if(!e.to.isVisited()){
+                            queue.add(e.to);
+                        }
+
+                        // Get path info for current vertex
+                        ArrayList<Edge> tmp = paths.get(currentVertex); // 'e.from' is the same as 'currentVertex'
+                        tmp.add(e);
+                        paths.put(e.to, tmp);
+                    }
+                }
+            }
+        }
+
+        ArrayList<Edge> finalPath = paths.get(currentVertex);
+
+        System.out.println("Final Path");
+        for (Edge e: finalPath){
+            System.out.println(e.from.getName() + " -> " + e.to.getName());
+        }
+        System.out.println("-----------");
+
+        if ((finalPath.size() == 0) || (currentVertex != destinationVertex)){
+            return null;
+        }
+        else {
+            return paths.get(currentVertex);
+        }
+    }
+
+    /**
+     * Creates two super vertices to use the FF algorith with multiple sources/targets
+     * @param sources
+     * @param destinations
+     */
+    private void createSuperVertices(String[] sources, String[] destinations) {
+        graph.addVertex("superSource");
+        graph.addVertex("superDestination");
+        Vertex superSource = graph.getVertex("superSource");
+        Vertex superDestination = graph.getVertex("superDestination");
+
+        for (String source: sources){
+            Vertex sourceVertex = graph.getVertex(source);
+            graph.addEdge(superSource, sourceVertex, Integer.MAX_VALUE);
+        }
+        for (String dest: destinations){
+            Vertex destVertex = graph.getVertex(dest);
+            graph.addEdge(destVertex, superDestination, Integer.MAX_VALUE);
+        }
+    }
+
+    /**
 	 * Calculates the graph showing the maxFlow.
 	 *
 	 * @param sources a list of all source nodes
@@ -146,8 +261,10 @@ public class MaxFlow {
 	 * @return a ArrayList of Strings as specified in the task in dot code
 	 */
 	public final ArrayList<String> findResidualNetwork(final String[] sources,	final String[] destinations) {
-		//TODO Add you code here
-		return null; // dummy, replace
+        findMaxFlow(sources, destinations);
+        ArrayList<String> dotGraph = graph.toDot();
+
+        return dotGraph;
 	}
 
 }

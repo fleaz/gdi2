@@ -1,5 +1,7 @@
 package lab;
 
+import java.util.ArrayList;
+
 public class Edge {
     Vertex from,to;
     int flow, capacity;
@@ -11,14 +13,6 @@ public class Edge {
         this.flow = 0;
 
         from.connectOutgoingEdge(this);
-    }
-
-    public Vertex getFrom(){
-        return this.from;
-    }
-
-    public Vertex getTo(){
-        return this.to;
     }
 
     public int getFlow(){
@@ -35,5 +29,30 @@ public class Edge {
 
     public int getRemainingCapacity(){
         return (this.capacity - this.flow);
+    }
+
+    public boolean hasCapacityLeft(){
+        return (this.capacity - this.flow > 0);
+    }
+
+    public String toDot() {
+        if (from.getName() == "superSource" || to.getName() == "superDestination"){
+            return null;
+        }
+        StringBuilder tmp = new StringBuilder();
+        tmp.append(from.getName());
+        tmp.append(" -> ");
+        tmp.append(to.getName());
+        tmp.append(" [label=\"");
+        tmp.append(capacity);
+        tmp.append("-");
+        tmp.append(flow);
+        tmp.append("\"]");
+        if(hasCapacityLeft()){
+            tmp.append("[style=bold]");
+        }
+        tmp.append(";");
+
+        return tmp.toString();
     }
 }
