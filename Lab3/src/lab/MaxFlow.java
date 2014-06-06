@@ -197,7 +197,10 @@ public class MaxFlow {
                 for (Edge e: currentVertex.getOutgoingEdges()){
                     if (e.hasCapacityLeft()){ // Only use available edges (has remaining capacity)
                         // Add new Vertex to queue
-                        queue.add(e.to);
+                        if(!e.to.isVisited()){
+                            queue.add(e.to);
+                        }
+
                         paths.put(e.to,currentVertex);
                     }
                 }
@@ -224,11 +227,11 @@ public class MaxFlow {
             // Get the path in the right order
             Collections.reverse(finalPath);
 
-            System.out.println("Final path:");
-            for(Edge e: finalPath){
-                System.out.println(e.from.getName() + " -> " + e.to.getName());
-            }
-            System.out.println("Ende......................................");
+            //System.out.println("Final path:");
+            //for(Edge e: finalPath){
+            //    System.out.println(e.from.getName() + " -> " + e.to.getName());
+            //}
+            //System.out.println("Ende......................................");
             return finalPath;
         }
 
