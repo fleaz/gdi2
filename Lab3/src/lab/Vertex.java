@@ -35,12 +35,12 @@ public class Vertex {
     }
 
     public void setSource() {
-        System.out.println("Mark " + this.name + " as source");
+        //System.out.println("Mark " + this.name + " as source");
         this.source = true;
     }
 
     public void setDestination() {
-        System.out.println("Mark " + this.name + " as Dest");
+        //System.out.println("Mark " + this.name + " as Dest");
         this.destination = true;
     }
 

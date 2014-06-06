@@ -179,25 +179,14 @@ public class MaxFlow {
         // Insert start vertex
         queue.add(graph.getVertex("superSource"));
 
-        //Initialize paths list
-        ArrayList<Vertex> allVertices = graph.getVertices();
-        for (Vertex v: allVertices){
-            paths.put(v, null); // Empty predecessor for every vertex
-        }
-
         // Clear 'visited' status on the vertices
         graph.clearStatus();
 
         while (!queue.isEmpty()){
-            lastVertex = currentVertex;
             currentVertex = queue.get(0);
             queue.remove(0);
-            System.out.println("Current: " + currentVertex.getName());
-            if(lastVertex != null) System.out.println("Predecessor: " + lastVertex.getName());
-            paths.put(currentVertex, lastVertex); // set predecessor for current vertex
 
             currentVertex.setVisited(true);
-
 
             if(currentVertex == destinationVertex){
                 break;
@@ -206,10 +195,8 @@ public class MaxFlow {
                 for (Edge e: currentVertex.getOutgoingEdges()){
                     if (e.hasCapacityLeft()){ // Only use available edges (has remaining capacity)
                         // Add new Vertex to queue
-                        if(!e.to.isVisited()){
-                            queue.add(e.to);
-                        }
-
+                        queue.add(e.to);
+                        paths.put(e.to,currentVertex);
                     }
                 }
             }
@@ -227,11 +214,19 @@ public class MaxFlow {
                 //System.out.println("Current: " + current.getName());
                 //System.out.println("Predecessor: " + predecessor.getName());
                 Edge e = graph.getEdge(predecessor, current);
+                finalPath.add(e);
                 current = predecessor;
                 predecessor = paths.get(current);
             }
+
+            // Get the path in the right order
             Collections.reverse(finalPath);
-            System.out.println(finalPath);
+
+            //System.out.println("Final path:");
+            //for(Edge e: finalPath){
+            //    System.out.println(e.from.getName() + " -> " + e.to.getName());
+            //}
+            //System.out.println("Ende.");
             return finalPath;
         }
 
