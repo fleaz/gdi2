@@ -3,9 +3,6 @@ package lab;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-/**
- * Created by fleaz on 6/5/14.
- */
 public class Graph {
     private HashMap<String, Vertex> vertices = new HashMap<String, Vertex>();
     private ArrayList<Edge> edges = new ArrayList<Edge>();
@@ -20,8 +17,16 @@ public class Graph {
     }
 
     public void addVertex(String name){
+        System.out.println("Added " + name);
         Vertex v = new Vertex(name);
         vertices.put(name, v);
     }
-    
+
+    public boolean hasVertex(String name){
+        return vertices.containsKey(name);
+    }
+
+    public Vertex getVertex(String name){
+        return vertices.get(name);
+    }
 }

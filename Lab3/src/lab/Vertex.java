@@ -2,9 +2,6 @@ package lab;
 
 import java.util.ArrayList;
 
-/**
- * Created by fleaz on 6/5/14.
- */
 public class Vertex {
     ArrayList<Edge> outgoingEdges = new ArrayList<Edge>();
     String name;

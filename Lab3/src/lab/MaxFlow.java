@@ -1,6 +1,13 @@
 package lab;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * MaxFlow.java
  */
@@ -29,10 +36,56 @@ public class MaxFlow {
 	 * @param filename the absolute or relative path and filename of the file
 	 */
 	public MaxFlow(final String filename) {
-		//TODO Add you code here
-		
+        Pattern edgePattern =
+                Pattern.compile("(\\w+)\\s*->\\s*(\\w+)\\s*\\[.*label=\"(\\d+)\".*\\];");
+
+        ArrayList<String> lines = readFile(filename);
+
+        for (String line: lines){
+            Matcher m = edgePattern.matcher(line);
+            if(m.matches()){ // It's an edge
+                String from = m.group(1);
+                String to = m.group(2);
+                int capacity = Integer.valueOf(m.group(3));
+
+                if(!graph.hasVertex(from)){
+                    graph.addVertex(from);
+                }
+                if(!graph.hasVertex(to)){
+                    graph.addVertex(to);
+                }
+
+                Vertex fromV = graph.getVertex(from);
+                Vertex toV = graph.getVertex(to);
+
+                graph.addEdge(fromV, toV, capacity);
+            }
+        }
 	}
-	
+
+    /**
+     * Reads a given file
+     * @param filename name of the file in the project dir
+     * @return ArrayList<String> with every line of the file
+     */
+    private ArrayList<String> readFile(String filename) {
+        ArrayList<String> lines = new ArrayList<String>();
+
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(filename));
+            String line;
+            while ((line = in.readLine()) != null) {
+                lines.add(line);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return lines;
+    }
+
+
 	/**
 	 * Calculates the maximum number of cars able to travel the graph specified
 	 * in filename.
@@ -47,8 +100,42 @@ public class MaxFlow {
 	 * 			SOURCES_SAME_AS_DESTINATIONS if sources == destinations 
 	 */
 	public final int findMaxFlow(final String[] sources, final String[] destinations) {
-		//TODO Add you code here
-		return 0; // dummy, replace
+		boolean noSource = false;
+        boolean noDest = false;
+
+        for (String source: sources){
+            if(!graph.hasVertex(source)){
+                System.out.println(source + " not in Graph");
+                noSource = true;
+            }
+        }
+        for (String dest: destinations){
+            if(!graph.hasVertex(dest)){
+                System.out.println(dest + " not in Graph");
+                noDest = true;
+            }
+        }
+
+        if (noSource && noDest){
+            return NO_SOURCE_DESTINATION_FOUND;
+        }
+        if (noSource){
+            return NO_SOURCE_FOUND;
+        }
+        if (noDest){
+            return NO_DESTINATION_FOUND;
+        }
+
+        if(sources.length == destinations.length){
+            Arrays.sort(sources);
+            Arrays.sort(destinations);
+            if(Arrays.equals(sources, destinations)){
+                return SOURCES_SAME_AS_DESTINATIONS;
+            }
+        }
+
+        // Hier kommt jetzt der Ford-Volker
+		return 0;
 	}
 	
 	/**

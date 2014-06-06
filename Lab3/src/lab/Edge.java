@@ -1,8 +1,5 @@
 package lab;
 
-/**
- * Created by fleaz on 6/5/14.
- */
 public class Edge {
     Vertex from,to;
     int flow, capacity;
@@ -30,6 +27,10 @@ public class Edge {
 
     public int getCapacity(){
         return this.capacity;
+    }
+
+    public void addFlow(int newFlow){
+        this.flow += newFlow;
     }
 
     public int getRemainingCapacity(){
