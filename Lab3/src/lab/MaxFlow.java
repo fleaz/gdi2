@@ -156,7 +156,7 @@ public class MaxFlow {
                     maxFlow = e.getRemainingCapacity();
                 }
             }
-            System.out.println("Max Flow: " + maxFlow);
+            //System.out.println("Max Flow: " + maxFlow);
 
             // Add flow along the path
             for (Edge e: nextPath){
@@ -228,7 +228,7 @@ public class MaxFlow {
             for(Edge e: finalPath){
                 System.out.println(e.from.getName() + " -> " + e.to.getName());
             }
-            System.out.println("Ende.");
+            System.out.println("Ende......................................");
             return finalPath;
         }
 

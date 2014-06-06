@@ -64,9 +64,9 @@ public class Graph {
         }
         dotGraph.add("}");
 
-        //for (String str: dotGraph){
-        //    System.out.println(str);
-        //}
+        for (String str: dotGraph){
+            System.out.println(str);
+        }
         return dotGraph;
     }
 
