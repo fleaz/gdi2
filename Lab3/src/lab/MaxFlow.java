@@ -156,6 +156,7 @@ public class MaxFlow {
                     maxFlow = e.getRemainingCapacity();
                 }
             }
+            System.out.println("Max Flow: " + maxFlow);
 
             // Add flow along the path
             for (Edge e: nextPath){
@@ -163,7 +164,8 @@ public class MaxFlow {
             }
         }
 
-		return 0;
+        return graph.findMaxFlow(destinations);
+
 	}
 
     private ArrayList<Edge> findPath() {
@@ -222,11 +224,11 @@ public class MaxFlow {
             // Get the path in the right order
             Collections.reverse(finalPath);
 
-            //System.out.println("Final path:");
-            //for(Edge e: finalPath){
-            //    System.out.println(e.from.getName() + " -> " + e.to.getName());
-            //}
-            //System.out.println("Ende.");
+            System.out.println("Final path:");
+            for(Edge e: finalPath){
+                System.out.println(e.from.getName() + " -> " + e.to.getName());
+            }
+            System.out.println("Ende.");
             return finalPath;
         }
 
