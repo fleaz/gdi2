@@ -81,4 +81,13 @@ public class Graph {
             destVertex.setDestination();
         }
     }
+
+    public Edge getEdge(Vertex from, Vertex to) {
+        for(Edge e: edges){
+            if(e.from.equals(from) && e.to.equals(to)){
+                return e;
+            }
+        }
+        return null;
+    }
 }

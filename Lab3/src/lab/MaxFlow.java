@@ -3,10 +3,7 @@ package lab;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -170,11 +167,13 @@ public class MaxFlow {
 	}
 
     private ArrayList<Edge> findPath() {
-        HashMap<Vertex,ArrayList<Edge>> paths = new HashMap<>();
+        HashMap<Vertex,Vertex> paths = new HashMap<>(); // save the predecessor for every vertex
         ArrayList<Vertex> queue = new ArrayList<>();
 
         Vertex destinationVertex = graph.getVertex("superDestination");
         Vertex currentVertex = null;
+        Vertex lastVertex = null;
+
         //System.out.println("Destination Vertex: " + destinationVertex.getName());
 
         // Insert start vertex
@@ -183,18 +182,22 @@ public class MaxFlow {
         //Initialize paths list
         ArrayList<Vertex> allVertices = graph.getVertices();
         for (Vertex v: allVertices){
-            paths.put(v, new ArrayList<Edge>()); // Empty path for every vertex
+            paths.put(v, null); // Empty predecessor for every vertex
         }
 
         // Clear 'visited' status on the vertices
         graph.clearStatus();
 
         while (!queue.isEmpty()){
+            lastVertex = currentVertex;
             currentVertex = queue.get(0);
             queue.remove(0);
+            System.out.println("Current: " + currentVertex.getName());
+            if(lastVertex != null) System.out.println("Predecessor: " + lastVertex.getName());
+            paths.put(currentVertex, lastVertex); // set predecessor for current vertex
+
             currentVertex.setVisited(true);
 
-            //System.out.println("Current Vertex: " + currentVertex.getName());
 
             if(currentVertex == destinationVertex){
                 break;
@@ -207,29 +210,31 @@ public class MaxFlow {
                             queue.add(e.to);
                         }
 
-                        // Get path info for current vertex
-                        ArrayList<Edge> tmp = paths.get(currentVertex); // 'e.from' is the same as 'currentVertex'
-                        tmp.add(e);
-                        paths.put(e.to, tmp);
                     }
                 }
             }
         }
 
-        ArrayList<Edge> finalPath = paths.get(currentVertex);
-
-        System.out.println("Final Path");
-        for (Edge e: finalPath){
-            System.out.println(e.from.getName() + " -> " + e.to.getName());
-        }
-        System.out.println("-----------");
-
-        if ((finalPath.size() == 0) || (currentVertex != destinationVertex)){
+        if (currentVertex != destinationVertex){
             return null;
         }
-        else {
-            return paths.get(currentVertex);
+        else{
+            ArrayList<Edge> finalPath = new ArrayList<>();
+            Vertex current = currentVertex;
+            Vertex predecessor = paths.get(currentVertex);
+
+            while (predecessor != null){
+                //System.out.println("Current: " + current.getName());
+                //System.out.println("Predecessor: " + predecessor.getName());
+                Edge e = graph.getEdge(predecessor, current);
+                current = predecessor;
+                predecessor = paths.get(current);
+            }
+            Collections.reverse(finalPath);
+            System.out.println(finalPath);
+            return finalPath;
         }
+
     }
 
     /**
