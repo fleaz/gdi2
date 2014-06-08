@@ -69,12 +69,13 @@ public class MaxFlow {
      */
     private ArrayList<String> readFile(String filename) {
         ArrayList<String> lines = new ArrayList<String>();
-
+        //System.out.println(filename);
         try {
             BufferedReader in = new BufferedReader(new FileReader(filename));
             String line;
             while ((line = in.readLine()) != null) {
                 lines.add(line);
+                //System.out.println(line);
             }
 
         } catch (IOException e) {
@@ -101,6 +102,7 @@ public class MaxFlow {
 	public final int findMaxFlow(final String[] sources, final String[] destinations) {
 		boolean noSource = false;
         boolean noDest = false;
+        int completeFlow = 0;
 
         for (String source: sources){
             if(!graph.hasVertex(source)){
@@ -141,14 +143,7 @@ public class MaxFlow {
         }
 
 
-
-        while(true){
-            // Find path
-            nextPath = findPath();
-            if (nextPath == null){
-                break;
-            }
-
+        while ((nextPath = findPath()) != null){
             // Get max Cap on path
             int maxFlow = Integer.MAX_VALUE;
             for (Edge e: nextPath){
@@ -157,15 +152,15 @@ public class MaxFlow {
                 }
             }
             //System.out.println("Max Flow: " + maxFlow);
-
+            completeFlow += maxFlow;
             // Add flow along the path
             for (Edge e: nextPath){
                 e.addFlow(maxFlow);
             }
         }
 
-        return graph.findMaxFlow(destinations);
-
+        //return graph.findMaxFlow(destinations);
+        return completeFlow;
 	}
 
     private ArrayList<Edge> findPath() {
@@ -174,7 +169,6 @@ public class MaxFlow {
 
         Vertex destinationVertex = graph.getVertex("superDestination");
         Vertex currentVertex = null;
-        Vertex lastVertex = null;
 
         //System.out.println("Destination Vertex: " + destinationVertex.getName());
 
@@ -190,7 +184,7 @@ public class MaxFlow {
 
             currentVertex.setVisited(true);
 
-            if(currentVertex == destinationVertex){
+            if(currentVertex.equals(destinationVertex)){
                 break;
             }
             else{
@@ -199,9 +193,10 @@ public class MaxFlow {
                         // Add new Vertex to queue
                         if(!e.to.isVisited()){
                             queue.add(e.to);
+                            paths.put(e.to, currentVertex);
                         }
 
-                        paths.put(e.to,currentVertex);
+
                     }
                 }
             }
@@ -225,7 +220,7 @@ public class MaxFlow {
             }
 
             // Get the path in the right order
-            Collections.reverse(finalPath);
+            //Collections.reverse(finalPath);
 
             //System.out.println("Final path:");
             //for(Edge e: finalPath){

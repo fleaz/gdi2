@@ -14,8 +14,10 @@ public class Graph {
 
     public void addEdge(Vertex from, Vertex to, int capacity){
         //System.out.println("Added Edge " + from.getName() + " -> " + to.getName());
-        Edge e = new Edge(from, to, capacity);
+        Edge e = new Edge(from, to, capacity, false); // add the normal edge
+        Edge eBackward = new Edge(to, from, capacity, true); // add the corresponding backward edge
         edges.add(e);
+        edges.add(eBackward);
     }
 
     public void addVertex(String name){
@@ -64,9 +66,9 @@ public class Graph {
         }
         dotGraph.add("}");
 
-        for (String str: dotGraph){
-            System.out.println(str);
-        }
+        //for (String str: dotGraph){
+        //    System.out.println(str);
+        //}
         return dotGraph;
     }
 
@@ -89,18 +91,5 @@ public class Graph {
             }
         }
         return null;
-    }
-
-    public int findMaxFlow(String[] destinations) {
-        int flow = 0;
-        for (String name: destinations){
-            Vertex dest = getVertex(name);
-            for(Edge e: edges){
-                if(e.to.equals(dest)){
-                    flow += e.getFlow();
-                }
-            }
-        }
-        return flow;
     }
 }
