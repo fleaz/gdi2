@@ -1,8 +1,16 @@
 package lab;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 import frame.Entry;
+
+import static java.lang.Math.floor;
+import static java.lang.Math.pow;
 
 /*
  * Implements a Hash-Table structure as introduced in the 
@@ -17,7 +25,9 @@ import frame.Entry;
 
 
 public class HashTable {
-	
+	private Entry[] table = null;
+    private String hashFunction, collisionResolution;
+
     /**
 	 * The constructor
 	 * 
@@ -36,9 +46,9 @@ public class HashTable {
 	 * factor of 1.
 	 */
     public HashTable(int k, String hashFunction, String collisionResolution) {
-        /**
-         * Add your code here
-    	 */
+        this.table = new Entry[k];
+        this.hashFunction = hashFunction;
+        this.collisionResolution = collisionResolution;
     }
 
     /**
@@ -57,12 +67,44 @@ public class HashTable {
 	 *         Hash-Table.
 	 */
     public int loadFromFile (String filename) {
-        /**
-         * Add your code here
-    	 */
-    	return 0;
+        ArrayList<String> input = readFile(filename);
+        int x = 0;
+
+        for (String s: input){
+            System.out.println(s);
+            String[] line = s.split(";");
+            Entry e = new Entry(line[0], line[1], line[2]);
+            if (this.insert(e)){
+                x++;
+            }
+
+        }
+    	return x;
     }
-    
+
+    private ArrayList<String> readFile(String filename) {
+        BufferedReader br = null;
+        ArrayList<String> data = new ArrayList<>();
+
+        try {
+            String sCurrentLine;
+            br = new BufferedReader(new FileReader(filename));
+            while ((sCurrentLine = br.readLine()) != null) {
+                data.add(sCurrentLine);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null) br.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+
+        return data;
+    }
+
     /**
 	 * This method inserts the entry insertEntry into the Hash-Table. Note that
 	 * you have to deal with collisions if you want to insert an entry into a
@@ -77,12 +119,122 @@ public class HashTable {
 	 *         false if the entry already exists in the Hash-Table
 	 */
     public boolean insert(Entry insertEntry) {
-        /**
-         * Add your code here
-    	 */
-    	return false;
+        int hash = hashKey(insertEntry.getKey());
+
+        if (find(insertEntry.getKey()) != null){
+            System.out.println("Not Inserted. Key: " + insertEntry.getKey() + " Hash: " + hash);
+            return false;
+        }
+
+        if(this.table[hash] == null || this.table[hash].isDeleted()){
+            this.table[hash] = insertEntry;
+            System.out.println("Inserted. Key: " + insertEntry.getKey() + " Hash: " + hash);
+            return true;
+        }
+        else{
+            int newHash = findNextPosition(hash);
+            this.table[newHash] = insertEntry;
+            System.out.println("Inserted. Key: " + insertEntry.getKey() + " Hash: " + hash);
+            return true;
+        }
+
     }
-    
+
+    private int findNextPosition(int oldHash) {
+        int newHash = oldHash;
+        //System.out.println("Old Hash: " + oldHash);
+
+        if(this.collisionResolution.equals("linear_probing")){
+            System.out.println(this.table[newHash]);
+            while(this.table[newHash] != null || !this.table[newHash].isDeleted()){
+                newHash++;
+                if (newHash >= this.table.length){
+                    return -1;
+                }
+            }
+        }
+        else if(this.collisionResolution.equals("quadratic_probing")){
+            int step = 1;
+            while(this.table[newHash] != null || !this.table[newHash].isDeleted()){
+                newHash = nextPositionQuad(newHash, step);
+                step++;
+            }
+        }
+
+        //System.out.println("New Hash: " + newHash);
+        return newHash;
+    }
+
+    private int nextPositionQuad(int oldHash, int i) {
+        int ret =(int) (oldHash - pow(floor(i/2),i) * pow((-1), i));
+
+        if(ret < 0){
+            return ret % this.table.length;
+        }
+        else{
+            return ret;
+        }
+
+    }
+
+    public int hashKey(String key){
+        String hash = "";
+        key = key.substring(0,5);
+
+        if(this.hashFunction.equals("division")){
+            for(Character c: key.toCharArray()){
+                hash += String.valueOf((int)c);
+            }
+
+            return (int) (Double.valueOf(hash) % this.table.length);
+        }
+        else if(this.hashFunction.equals("folding")){
+            for(Character c: key.toCharArray()) {
+                hash += String.valueOf((int) c);
+            }
+
+            int length = String.valueOf(this.table.length).length();
+            int missingChar = hash.length() % length;
+
+            String addIt = "";
+            for(int i=0; i<missingChar; i++){
+                addIt = addIt.concat("0");
+            }
+            hash = hash.concat(addIt);
+
+            ArrayList<String> hashList = new ArrayList<>();
+
+            for(int i=0; i < hash.length() / length; i++){
+                hashList.add(hash.substring(i*length, length + i*length));
+            }
+
+            Collections.reverse(hashList);
+
+            int sum = 0;
+
+            for(int i=0; i < hashList.size(); i++){
+                if (i % 2 == 0){
+                    sum += Integer.valueOf(new StringBuilder(hashList.get(i)).reverse().toString());
+                }
+                else{
+                    sum += Integer.valueOf(hashList.get(i));
+                }
+            }
+
+            String foo = String.valueOf(sum);
+            sum = Integer.valueOf(foo.substring(foo.length()-length, foo.length()));
+
+            return sum % this.table.length;
+        }
+        else if(this.hashFunction.equals("mid_square")){
+            
+            return 0;
+        }
+        else{
+            return 0;
+        }
+    }
+
     /**
 	 * This method deletes the entry from the Hash-Table, having deleteKey as
 	 * key This method returns the entry, having deleteKey as key if the
@@ -95,10 +247,26 @@ public class HashTable {
 	 *         if the entry is not found in the Hash-Table
 	 */
     public Entry delete(String deleteKey) {
-        /**
-         * Add your code here
-    	 */  
-    	return null;
+        int hash = hashKey(deleteKey);
+
+        if(find(deleteKey) == null){
+            System.out.println("Not deleted. Key: " + deleteKey + " Hash: " + hash);
+            return null;
+
+        }
+        else{
+            while(true){
+                if(this.table[hash].getKey().equals(deleteKey)){
+                    this.table[hash].markDeleted();
+                    break;
+                }
+                else{
+                    hash = findNextPosition(hash);
+                }
+            }
+            System.out.println("Deleted. Key: " + deleteKey + " Hash: " + hash);
+            return this.table[hash];
+        }
     }
 
     /**
@@ -112,10 +280,29 @@ public class HashTable {
 	 *         null if the entry is not found in the Hash-Table
 	 */
     public Entry find(String searchKey) {
-        /**
-         * Add your code here
-    	 */
-    	return null;
+        int oldHash = hashKey(searchKey);
+        int hash = oldHash;
+
+        if(this.table[hash] == null || this.table[hash].isDeleted()){
+            System.out.println("Not found");
+            return null;
+        }
+
+        while(true){
+            if(this.table[hash].getKey().equals(searchKey) && !this.table[hash].isDeleted()){
+                System.out.println("Found at pos " + hash);
+                return this.table[hash];
+            }
+
+            hash = findNextPosition(hash);
+
+            if(oldHash == hash || hash == -1){
+                System.out.println("Not found");
+                return null;
+            }
+
+        }
+
     }
     
     /**
