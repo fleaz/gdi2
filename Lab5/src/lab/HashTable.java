@@ -193,7 +193,7 @@ public class HashTable {
                 hash += String.valueOf((int) c);
             }
 
-            int length = String.valueOf(this.table.length).length();
+            int length = String.valueOf(this.table.length - 1).length(); // e.g. length is 2 for 100 positions [0-99]
             int missingChar = hash.length() % length;
 
             String addIt = "";
@@ -227,7 +227,7 @@ public class HashTable {
             return sum % this.table.length;
         }
         else if(this.hashFunction.equals("mid_square")){
-            
+
             return 0;
         }
         else{
