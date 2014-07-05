@@ -166,7 +166,7 @@ public class HashTable {
     }
 
     private int nextPositionQuad(int oldHash, int i) {
-        int ret =(int) (oldHash - pow(floor(i/2),i) * pow((-1), i));
+        int ret =(int) (oldHash - floor(pow(i/2,i)) * pow((-1), i));
 
         if(ret < 0){
             return ret % this.table.length;
