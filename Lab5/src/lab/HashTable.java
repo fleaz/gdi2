@@ -4,12 +4,11 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 
 import frame.Entry;
 
-import static java.lang.Math.floor;
+import static java.lang.Math.ceil;
 import static java.lang.Math.pow;
 
 /*
@@ -26,7 +25,10 @@ import static java.lang.Math.pow;
 
 public class HashTable {
 	private Entry[] table = null;
+    private String[] sequences = null;
     private String hashFunction, collisionResolution;
+    private int fillLevel = 0;
+
 
     /**
 	 * The constructor
@@ -47,6 +49,7 @@ public class HashTable {
 	 */
     public HashTable(int k, String hashFunction, String collisionResolution) {
         this.table = new Entry[k];
+        this.sequences = new String[k];
         this.hashFunction = hashFunction;
         this.collisionResolution = collisionResolution;
     }
@@ -71,7 +74,6 @@ public class HashTable {
         int x = 0;
 
         for (String s: input){
-            System.out.println(s);
             String[] line = s.split(";");
             Entry e = new Entry(line[0], line[1], line[2]);
             if (this.insert(e)){
@@ -119,54 +121,98 @@ public class HashTable {
 	 *         false if the entry already exists in the Hash-Table
 	 */
     public boolean insert(Entry insertEntry) {
-        int hash = hashKey(insertEntry.getKey());
+        System.out.println("- Starting to insert");
+        String key = insertEntry.getKey();
+        int hash = hashKey(key);
+        int homeAddr = hash;
 
-        if (find(insertEntry.getKey()) != null){
-            System.out.println("Not Inserted. Key: " + insertEntry.getKey() + " Hash: " + hash);
+        if(this.table[hash] == null || this.table[hash].isDeleted()){ // check home addr
+            System.out.println("- Easy inserted " + key + " with hash " + homeAddr + " at Position " + hash);
+            this.table[hash] = insertEntry;
+            this.fillLevel++;
+            checkIfExpansionIsNeeded();
+            return true;
+        }
+
+        hash = findNextPositionToInsert(key);
+
+        if(this.table[hash] == null || this.table[hash].isDeleted()){ // check next found position
+            this.table[hash] = insertEntry;
+            System.out.println("- Inserted " + key + " with hash " + homeAddr +" at Position " + hash);
+            this.fillLevel++;
+            checkIfExpansionIsNeeded();
+            return true;
+        }
+        else{   // found key
+            System.out.println("- Not inserted " + key + " was already at pos "+ hash);
             return false;
         }
-
-        if(this.table[hash] == null || this.table[hash].isDeleted()){
-            this.table[hash] = insertEntry;
-            System.out.println("Inserted. Key: " + insertEntry.getKey() + " Hash: " + hash);
-            return true;
-        }
-        else{
-            int newHash = findNextPosition(hash);
-            this.table[newHash] = insertEntry;
-            System.out.println("Inserted. Key: " + insertEntry.getKey() + " Hash: " + hash);
-            return true;
-        }
-
     }
 
-    private int findNextPosition(int oldHash) {
-        int newHash = oldHash;
-        //System.out.println("Old Hash: " + oldHash);
+    private void checkIfExpansionIsNeeded() {
+        if(this.fillLevel > this.table.length * 0.75){
+            rehash();
+        }
+    }
+
+    // Returns the next position where an entry can be inserted or the position where the key is found
+    private int findNextPositionToInsert(String key) {
+        int newHash = hashKey(key);
+        String sequence = new String();
+        boolean overflow = false;
 
         if(this.collisionResolution.equals("linear_probing")){
-            System.out.println(this.table[newHash]);
-            while(this.table[newHash] != null || !this.table[newHash].isDeleted()){
-                newHash++;
-                if (newHash >= this.table.length){
-                    return -1;
+            //System.out.println(this.table[newHash]);
+            while(this.table[newHash] != null && !this.table[newHash].isDeleted()){
+
+                if(this.table[newHash].getKey().equals(key) && !this.table[newHash].isDeleted()){
+                    return newHash; // already in list
                 }
+                if (newHash == this.table.length-1 && !overflow){ // start again from the beginning
+                    newHash -= this.table.length-1;
+                    overflow = true;
+                }
+                sequence = sequence + newHash + ", ";
+                newHash++;
             }
         }
         else if(this.collisionResolution.equals("quadratic_probing")){
             int step = 1;
-            while(this.table[newHash] != null || !this.table[newHash].isDeleted()){
-                newHash = nextPositionQuad(newHash, step);
+            while(this.table[newHash] != null && !this.table[newHash].isDeleted()){
+
+                if( this.table[newHash].getKey().equals(key) && !this.table[newHash].isDeleted()){
+                    return newHash; // already in list
+                }
+                sequence = sequence + newHash + ", ";
+                newHash = nextPositionQuad(newHash, step)  % this.table.length;
                 step++;
+
+                if(newHash < 0){ // negative Values
+                    newHash += this.table.length;
+                }
             }
         }
 
-        //System.out.println("New Hash: " + newHash);
-        return newHash;
+        if(sequence.length() > 0){
+            System.out.println("Seq:" + sequence);
+            if(this.collisionResolution.equals("quadratic_probing")){
+                this.sequences[newHash] = sequence.substring(0,sequence.length()-5); // Inserts the same thing twice so we have to delete it
+            }
+            else{
+                this.sequences[newHash] = sequence.substring(0,sequence.length()-2);
+            }
+
+        }
+        else{
+            this.sequences[newHash] = "";
+        }
+        return newHash; // can be inserted here
     }
 
+
+
     private int nextPositionQuad(int oldHash, int i) {
-        int ret =(int) (oldHash - floor(pow(i/2,i)) * pow((-1), i));
+        int ret =(int) (oldHash - ceil(pow(i / 2, 2)) * pow((-1), i));
 
         if(ret < 0){
             return ret % this.table.length;
@@ -180,20 +226,16 @@ public class HashTable {
     public int hashKey(String key){
         String hash = "";
         key = key.substring(0,5);
+        int length = String.valueOf(this.table.length - 1).length(); // e.g. length is 2 for 100 positions [0-99]
+
+        for(Character c: key.toCharArray()){
+            hash += String.valueOf((int)c);
+        }
 
         if(this.hashFunction.equals("division")){
-            for(Character c: key.toCharArray()){
-                hash += String.valueOf((int)c);
-            }
-
             return (int) (Double.valueOf(hash) % this.table.length);
         }
         else if(this.hashFunction.equals("folding")){
-            for(Character c: key.toCharArray()) {
-                hash += String.valueOf((int) c);
-            }
-
-            int length = String.valueOf(this.table.length - 1).length(); // e.g. length is 2 for 100 positions [0-99]
             int missingChar = hash.length() % length;
 
             String addIt = "";
@@ -227,8 +269,20 @@ public class HashTable {
             return sum % this.table.length;
         }
         else if(this.hashFunction.equals("mid_square")){
+            double hashValue = Double.valueOf(hash) * Double.valueOf(hash);
+            String hashString = String.valueOf(hashValue);
+            int hashLength = hashString.length();
 
-            return 0;
+            System.out.printf("Hash:%.0f\n", hashValue);
+            System.out.println("hashlength: " + hashLength + " length: " + length);
+
+            String hashCut = hashString.substring(hashLength-9-length+1, hashLength-9+1);
+
+            System.out.println("Substring from " + (hashLength-9-length+1) + " to " + (hashLength-9+1)); // TODO
+            System.out.println("Cut: " + hashCut);
+            int ret = Integer.valueOf(hashCut);
+            return ret % this.table.length;
+
         }
         else{
             return 0;
@@ -249,23 +303,16 @@ public class HashTable {
     public Entry delete(String deleteKey) {
         int hash = hashKey(deleteKey);
 
-        if(find(deleteKey) == null){
-            System.out.println("Not deleted. Key: " + deleteKey + " Hash: " + hash);
+        if(this.table[hash] == null){
             return null;
-
         }
-        else{
-            while(true){
-                if(this.table[hash].getKey().equals(deleteKey)){
-                    this.table[hash].markDeleted();
-                    break;
-                }
-                else{
-                    hash = findNextPosition(hash);
-                }
-            }
-            System.out.println("Deleted. Key: " + deleteKey + " Hash: " + hash);
-            return this.table[hash];
+        int newHash = findNextPositionToInsert(deleteKey);
+
+        if (this.table[newHash] == null || this.table[newHash].isDeleted()) {
+            return null;
+        } else {
+            this.table[newHash].markDeleted();
+            return this.table[newHash];
         }
     }
 
@@ -281,30 +328,26 @@ public class HashTable {
 	 */
     public Entry find(String searchKey) {
         int oldHash = hashKey(searchKey);
-        int hash = oldHash;
+        int newHash = oldHash;
 
-        if(this.table[hash] == null || this.table[hash].isDeleted()){
+        if (this.table[newHash] == null) {
             System.out.println("Not found");
             return null;
         }
 
-        while(true){
-            if(this.table[hash].getKey().equals(searchKey) && !this.table[hash].isDeleted()){
-                System.out.println("Found at pos " + hash);
-                return this.table[hash];
-            }
+        newHash = findNextPositionToInsert(searchKey);
 
-            hash = findNextPosition(hash);
-
-            if(oldHash == hash || hash == -1){
-                System.out.println("Not found");
-                return null;
-            }
-
+        if (this.table[newHash] == null || this.table[newHash].isDeleted()) {
+            System.out.println("Not found");
+            return null;
+        } else {
+            System.out.println("Found at pos " + newHash);
+            return this.table[newHash];
         }
-
     }
-    
+
+
+
     /**
 	 * This method returns a ArrayList<String> containing the output Hash-Table.
 	 * The output should be directly interpretable dot code. Each item in the
@@ -315,12 +358,81 @@ public class HashTable {
 	 * @return returns the output Hash-Table in directly interpretable dot code
 	 */    
     public ArrayList<String> getHashTable() {
-        /**
-         * Add your code here
-    	 */
-    	return null;
+
+        ArrayList<String> dot = new ArrayList<>();
+        int[] positions = new int[this.table.length];
+
+        // Construct Head
+        dot.add("Digraph{");
+        dot.add("nodesep=.05;");
+        dot.add("rankdir=LR;");
+        dot.add("node[shape=record,height=.1];");
+
+        // Construct line #5
+        String line5 = "ht[label=\"";
+        for (int i=0; i < this.table.length; i++){
+            line5 += "<f" + i + ">" + i + "|";
+        }
+        line5 = line5.substring(0,line5.length()-1);
+        line5 += "\"];";
+        dot.add(line5);
+
+        // Insert nodes
+        int nodeNumber = 1;
+        for(int i=0; i < this.table.length; i++){
+            Entry e = this.table[i];
+
+            if (e != null && !e.isDeleted()) {
+                String[] entryData = e.toString().split(";");
+
+                String entry = entryData[0] + entryData[1] + "|" + entryData[2];
+
+                if (this.sequences[i] != null && !this.sequences[i].equals("")) {
+                    entry += "|" + this.sequences[i];
+                }
+
+                String node = "node" + nodeNumber + "[label=\"{<l>" + entry + "}\"];";
+                positions[i] = nodeNumber;
+                dot.add(node);
+                nodeNumber++;
+            }
+        }
+
+
+        // Insert ht
+        for(int i=0; i < this.table.length; i++){
+            Entry e = this.table[i];
+
+            if(e != null && !e.isDeleted()){
+                String ht ="ht:f" + i + "->node" + positions[i] + ":l;";
+                dot.add(ht);
+            }
+        }
+        dot.add("}");
+
+        System.out.println("---");
+        for(String s: this.sequences){
+            System.out.println(s);
+        }
+        System.out.println("---");
+        for(String s: dot){
+            System.out.println(s);
+        }
+        System.out.println("---");
+
+
+        return dot;
     }
 
+    boolean isPrime(int n) {
+        if (n % 2 == 0) return false;
+
+        for (int i = 3; i * i <= n; i += 2) {
+            if (n % i == 0)
+                return false;
+        }
+        return true;
+    }
  
 
     /**
@@ -334,9 +446,27 @@ public class HashTable {
 	 * number less than (101*10).
 	 */    
     private void rehash() {
-        /**
-         * Add your code here
-    	 */
+        System.out.println("REHASH!");
+        Entry[] tmpEntrys = this.table.clone();
+
+        int newSize = 0;
+
+        //Calc new Size
+        for (int i=this.table.length * 10; i > this.table.length; i--){
+            if (isPrime(i)){
+                newSize = i;
+                break;
+            }
+        }
+
+        this.table = new Entry[newSize];
+        this.sequences = new String[newSize];
+
+        for(Entry e: tmpEntrys){
+            if(e != null && !e.isDeleted()){
+                this.insert(e);
+            }
+        }
     }
 }
 
